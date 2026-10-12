@@ -1,6 +1,6 @@
 {
   "name": "lanes",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Size the whole engineering ceremony to the risk of each change: three lanes, an adversarial review panel for high-risk work, base and build sessions, and a tracking issue as cross-session memory.",
   "author": {
     "name": "aniteshdharam"

@@ -19,11 +19,17 @@ Two stages, every agent fresh, none of them the session that built the change.
    candidate only by quoting the line (`path:LINE` and its exact text) that makes the failure
    impossible.** Unconvinced, unlikely, or "no test for it" is not a dismissal. A verifier that
    shows the failure with a command marks it confirmed.
+3. **Check.** Every dismissal rests on one quoted line, so a checker re-reads it: one agent per
+   dismissal runs `git show <head>:<path> | sed -n '<line>p'` in the shared checkout and reports
+   what it printed, nothing more. The workflow compares. A quote that is not there at the head
+   commit (a line the verifier edited in its own copy, a path that does not exist, a wrong line
+   number) turns the dismissal into `stands`. A quote with an absolute path, or one that climbs
+   out of the checkout, is never a quote.
 
 The inverted burden of proof is the point. A single reviewer, however fresh, decides whether it
-is convinced; a reviewer who is merely unconvinced drops real bugs. In our use, this second stage
-caught defects on four of four high-risk slices that green CI and an independent fresh reviewer
-had both passed.
+is convinced; a reviewer who is merely unconvinced drops real bugs. On our own repository, this
+second stage caught defects on four of four high-risk slices that green CI and an independent
+fresh reviewer had both passed; that is our experience, not a measurement you can rerun.
 
 ## Run it
 
@@ -31,8 +37,9 @@ had both passed.
 git -C <repo> worktree add --detach <scratch>/lhr-tree <head sha>
 ```
 
-Then run the workflow. From a session, call the Workflow tool with `name: "lanes:lane-h-review"`
-and `args` as an object:
+Then run the workflow. Typed, `/lanes:lane-h-review` with the arguments after it (below). From
+a session, the Workflow tool with the name `/workflows` lists for the plugin's workflow (on our
+install, `lanes:lane-h-review`) and `args` as an object:
 
 ```js
 { tree: "/abs/scratch/lhr-tree", head: "<40-char sha>", base: "<40-char sha>",
@@ -57,18 +64,24 @@ Or type it: `/lanes:lane-h-review` followed by the same object as JSON, or as ke
 Afterwards remove the checkout and any `<tree>.<role>` checkouts agents left:
 `git -C <repo> worktree remove --force <path>`.
 
-Cost: at most finders + `max_candidates` agents (nine by default). The lever is slice size: a
-sprawling slice finds more than one run can verify.
+Cost: finders + `max_candidates` verifiers + one checker per dismissal (at most fifteen by
+default, nine when nothing is dismissed). The lever is slice size: a sprawling slice finds more
+than one run can verify.
 
 ## Read the result
 
-- `complete: false` means something did not run: a finder returned nothing, read no file, or a
-  candidate went unverified. **An empty report from an incomplete run is not a clean bill.**
-  Re-run only when the counts show the pass never actually ran.
+- `complete: false` means something did not run or was not checked: a finder returned nothing
+  or read no file, a verifier or checker returned nothing, or candidates went over the cap.
+  **An empty report from an incomplete run is not a clean bill.** Re-run only when the counts
+  show a pass never actually ran; an over-cap run is completed by you, not by a re-run.
 - `over_cap` candidates are **unverified, not cleared**. Read each one yourself and write its
-  disposition (fixed, filed, or why it cannot happen, with the quoted line) before merging.
-- `confirmed`: fix it. `stands`: fix it, or show the quoted line the verifier could not find.
-  `dismissed`: carries its quote; spot-check one.
+  disposition (fixed, filed, or why it cannot happen, with the quoted line) before merging. A
+  run with over-cap candidates and a written disposition for each is mergeable; one without is
+  not.
+- `confirmed`: fix it. `stands`: fix it, or show the quoted line the verifier could not find
+  (a `stands` whose reason says the quoted line is not at head means the verifier quoted
+  something the reviewed commit does not contain). `dismissed`: carries its quote and
+  `line_at_head`, what git printed for it; spot-check one.
 - **Record it** on the PR or tracking issue: the `label` line, `counts.agents_sent`, the model,
   and the findings with their verdicts. A merge with no review record is a stop.
 
@@ -82,12 +95,18 @@ same panel with plain subagents:
    the four-finding limit, and the rules: never edit the shared checkout (make its own worktree to
    run anything), run nothing against production or shared services, and report `head_seen`,
    `files_read` and findings as file, line, severity, failure and evidence.
-2. Pool the findings by `file:line`, rank by severity, keep six. Write down the rest as
-   unverified.
+2. Pool each finder's first four findings by `file:line` and rank by severity; within a
+   severity, take every finder's first finding before any finder's second, so no angle is
+   always the first cut. Keep six. Write down the rest, and anything a finder returned past its
+   fourth, as unverified.
 3. Dispatch one strong-tier subagent per candidate with the verifier instruction above, word for
-   word on the burden: the candidate stands unless it quotes the line that makes it impossible.
-4. Reject any dismissal without a `path:line` quote and any confirmation without a command. Then
-   read and record the result as above.
+   word on the burden: the candidate stands unless it quotes the line that makes it impossible,
+   relative to the checkout root, as it stands at HEAD in the shared checkout.
+4. Reject any dismissal without a `path:line` quote and any confirmation without a command.
+5. For each dismissal, run `git -C <tree> show <head>:<path> | sed -n '<line>p'` yourself and
+   compare with the quote. The quote is there when it is that line or at least half of it; a
+   lone bracket or a bare `return` is not a quote of the line. A quote that is not there turns
+   the dismissal into `stands`. Then read and record the result as above.
 
 ## Not this
 

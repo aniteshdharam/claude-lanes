@@ -14,7 +14,9 @@ Keep one small table in the repo (in `CLAUDE.md` or a doc it points to) that ans
 | `<a path no check watches>` | **none** | write it down: a declared gap is still a gap |
 
 Fill it from what each check actually runs, not from its name. A row with **none** is useful: it
-tells the next session that green CI says nothing about that path.
+tells the next session that green CI says nothing about that path. Name the **correctness
+gate** under the table: the check that grades outputs against known-right values, which every
+S and H slice must pass. A filled example ships with the plugin in `examples/CLAUDE.md`.
 
 ## Three rules
 

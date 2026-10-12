@@ -18,8 +18,9 @@ gets cut is fixed-cost ceremony on work where it catches nothing.
 | **S, standard** | A bounded feature or fix that touches nothing on the high-risk list. |
 | **H, high-risk** | Anything that touches the high-risk list, **at any size**. |
 
-**The high-risk list.** If the project's `CLAUDE.md` has a `High-risk paths` section, use it.
-Otherwise: schema and migrations; deleting or overwriting stored data; money, units and rounding;
+**The high-risk list.** The default categories below always apply. If the project's
+`CLAUDE.md` has a `High-risk paths` section, its paths are added to them, never swapped in for
+them. The defaults: schema and migrations; deleting or overwriting stored data; money, units and rounding;
 auth, sessions, permissions, secrets, personal data; what users are served (API responses,
 public pages, exports); the tests' expected values and the checks that read them; a public API or
 contract; infrastructure, deploy and CI config.
@@ -43,16 +44,20 @@ Rules for choosing:
 | Boot | the task | the brief + tracking issue body + its latest record | the project docs + issue + design and plan + the previous slice's PR |
 | Design | none | the locked decision rides in the brief | design spec + plan + **claims table**, locked before building |
 | Local checks | tests for the touched area; CI runs the rest | targeted + directly affected suites | the full local gate, including correctness tests |
-| Review | one strong-tier pass; docs-only or test-only: one strong-tier **reader of the whole files** | one strong-tier pass, not by the builder; the base may run it in its own session while that context is still small | the **review panel** on the delta, run by fresh agents, never in the context that built or coordinated it; plus a security review when auth, secrets or the public surface move |
+| Review | one strong-tier pass; docs-only or test-only: one strong-tier **reader of the whole files** | one strong-tier pass, not by the builder; the base may run it in its own session while that context is still small | the **review panel** on the delta, run by fresh agents, never in the context that built or coordinated it; plus a security review (`/security-review`, or your own) when auth, secrets or the public surface move |
 | PR body | three lines | the template, lean | full template + the review record |
 | Sessions | batch several T items | one slice per session | one slice per session |
-| Who builds | fast tier | a fast-tier build agent with a written brief, or the main session | the strong-tier main session itself, never handed down |
+| Who builds | fast tier | a fast-tier build agent with a written brief, or the session itself | the session that holds the slice, on the strong tier (under a base: a fresh strong-tier build session; solo: you); never a fast-tier agent |
 
-Per-lane checklists: [lanes-reference.md](lanes-reference.md).
+Per-lane checklists: [lanes-reference.md](lanes-reference.md). The PR body for each lane:
+[pr-body.md](pr-body.md).
 
 ## 3. Rules in every lane
 
-- **CI green before merge.** Your correctness gate runs wherever product code changes.
+- **CI green before merge.** Your correctness gate runs wherever product code changes. The
+  correctness gate is the check that grades outputs against known-right values (a golden
+  file, a fixture with expected numbers, a contract test); name it in the gate map. A repo with
+  none has a declared gap, not a green.
 - **A merge with no review record is a stop.** The record names what ran, on which model, how
   many agents it sent, and where its text lives. An unrun review prints nothing, so no other
   check shows it missing.
@@ -73,18 +78,20 @@ Per-lane checklists: [lanes-reference.md](lanes-reference.md).
 
 Three finders, one angle each (guards and everything that consumes them; tests that cannot
 fail; what leaves the building), then one verifier per finding, at most six, who may dismiss it
-**only by quoting the line that makes it impossible**. Run it on a throwaway checkout at the head
-commit: the Workflow tool with name `lanes:lane-h-review` and args `{tree, head, base, brief}`,
-or typed, `/lanes:lane-h-review tree=<path> head=<sha> base=<sha>`. Trust a clean result only when `complete` is true and
-`counts` show every agent returned; candidates over the cap are unverified, not cleared. How to
-run it, read it, and do it by hand: [review-panel.md](review-panel.md).
+**only by quoting the line that makes it impossible**, then a checker per dismissal who re-reads
+the quoted line at the head commit. Run it on a throwaway checkout at the head commit:
+`/lanes:lane-h-review tree=<path> head=<sha> base=<sha>`, or the Workflow tool under the name
+`/workflows` lists for it. Trust a clean result only when `complete` is true and `counts` show
+every agent returned; candidates over the cap are unverified, not cleared. How to run it, read
+it, and do it by hand: [review-panel.md](review-panel.md).
 
 ## 5. Sessions and memory
 
 A **base** session holds the work: picks the next slice riskiest-first, locks the design, names
-the lane and model, writes the brief, drives the review (on H it dispatches the panel; it never reviews H in its own
-context), merges. **Build** sessions are fresh, one
-slice each. Memory lives on a **tracking issue**, not in the chat: start with `/lanes:slice-boot`,
+the lane and model, writes the brief, drives the review (on H it dispatches the panel; it never
+reviews H in its own context), merges. **Build** sessions are fresh, one slice each. Working
+solo, one session holds both roles; the one separation that never relaxes is that the panel's
+agents start fresh. Memory lives on a **tracking issue**, not in the chat: start with `/lanes:slice-boot`,
 end with `/lanes:handoff`. Details: [sessions-and-memory.md](sessions-and-memory.md).
 
 ## 6. Which check do I run?

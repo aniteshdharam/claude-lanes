@@ -9,7 +9,9 @@ tracking issue).
 
 1. Load the `lanes` skill.
 2. Find the tracking issue: the one in the arguments, else the one named in the brief or the
-   user's message. If there is none, say so in one line and continue from the brief alone.
+   user's message. If there is none, say so in one line; then, if `.claude/handoff.md` exists
+   in the repo (where `/lanes:handoff` writes when there is no issue), read it as the latest
+   record, else continue from the brief alone.
 3. Read the issue's **body** and its **latest comment only**, never the thread:
    - `gh issue view <n> --json title,body,state,url`
    - `gh issue view <n> --json comments --jq '.comments[-1] | {author: .author.login, createdAt, body}'`
