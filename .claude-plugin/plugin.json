@@ -1,0 +1,12 @@
+{
+  "name": "lanes",
+  "version": "0.1.0",
+  "description": "Size the whole engineering ceremony to the risk of each change: three lanes, an adversarial review panel for high-risk work, base and build sessions, and a tracking issue as cross-session memory.",
+  "author": {
+    "name": "aniteshdharam"
+  },
+  "license": "MIT",
+  "keywords": ["process", "review", "lanes", "risk", "handoff", "subagent", "workflow", "code-review"],
+  "homepage": "https://github.com/aniteshdharam/claude-lanes",
+  "repository": "https://github.com/aniteshdharam/claude-lanes"
+}

@@ -1,0 +1,14 @@
+{
+  "name": "claude-lanes",
+  "description": "An engineering process for Claude Code: risk lanes, an adversarial review panel, base and build sessions, and hand-offs that survive the session.",
+  "owner": {
+    "name": "aniteshdharam"
+  },
+  "plugins": [
+    {
+      "name": "lanes",
+      "source": "./",
+      "description": "Pick the lane for a change, run its checklist, review high-risk work with a finder-and-verifier panel, and hand off through a tracking issue."
+    }
+  ]
+}
