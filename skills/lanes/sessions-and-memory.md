@@ -65,7 +65,8 @@ session to read the thread.
 
 A fresh session boots the same way every time (`/lanes:slice-boot` does it):
 
-1. The lane's boot reading (T: the task; S: the brief; H: the project docs).
+1. The lane's boot reading (T: the task; S: the brief; H: the project docs, meaning the
+   agent instructions file and whatever the brief names, nothing wider).
 2. The tracking issue's **body** and its **latest record comment only**. On a long-lived issue
    the thread is huge, and every session that re-reads it pays for it again.
 3. For H: the slice's design and plan, and the previous slice's PR as precedent.

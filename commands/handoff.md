@@ -29,6 +29,8 @@ Write the hand-off record for the slice this session worked on. Tracking issue, 
    says "see above" or "as discussed".
 3. Show the draft. Then post it with
    `gh issue comment <n> --body-file <file>` and print the comment URL. If there is no tracking
-   issue, save it to `.claude/handoff.md` in the repo instead and say where it is.
+   issue, save it to `.claude/handoff.md` in the repo instead and say where it is;
+   `/lanes:slice-boot` reads that file when it finds no issue. Commit it with the slice so the
+   next checkout has it, or ignore it in git if the repo is shared and the record is yours.
 4. If the slice is done and the issue's checklist has its box, tick it in the issue body. Close
    the issue only if its done-when gate has passed, and quote the gate when you do.

@@ -10,7 +10,7 @@ Lane T:  [ ] the task, nothing wider          [ ] tests for the touched area onl
          [ ] review: one strong-tier pass on the diff
              docs-only or test-only? one strong-tier reader of the WHOLE changed files instead,
              posted verbatim; an empty result is recorded as empty, never as coverage
-         [ ] CI green                          [ ] 3-line PR body, "Lane: T"
+         [ ] CI green                          [ ] 3-line PR body, "Lane: T" (pr-body.md)
          [ ] review record on the PR           [ ] merge
          Batch more T items into this session. Builder: fast tier.
 ```
@@ -25,8 +25,8 @@ Lane S:  [ ] boot: the brief + tracking issue body + its latest record comment o
          [ ] build test-first; targeted + directly affected suites locally
          [ ] review: one strong-tier pass on the delta, not by the builder (the base may run
              it in its own session while that session's context is still small)
-         [ ] CI green + correctness gate green
-         [ ] PR: the template, lean, "Lane: S"; review record on the PR
+         [ ] CI green + correctness gate green (the gate map names it)
+         [ ] PR: the template, lean, "Lane: S" (pr-body.md); review record on the PR
          [ ] merge (under a base: stop at a draft; the base reviews and merges)
          [ ] /lanes:handoff: record what shipped and name the next slice
          One slice per session. Builder: a fast-tier build agent with a written brief, or you.
@@ -49,12 +49,13 @@ Lane H:  Slice: ______  Tracking issue: ______  Model: ______
 [ ] Fixtures  for each guard test, one line on what would make it meaningless; show it isn't
 [ ] Local     the full local gate, including correctness tests
 [ ] Review    the panel (/lanes:lane-h-review) on the delta, launched by the coordinating
-              session, never by the build session on its own change; security review if auth, secrets or the public surface moved;
-              read `complete` and `counts`; every over-cap or unverified candidate gets a
-              written disposition before merge
-[ ] Gate      CI green + correctness gate green
-[ ] PR        full template, "Lane: H", the review record (label, agents sent, model, where
-              the text lives) and the verdicts
+              session (solo: by you, once the build is committed), never by a build session
+              on its own change; security review (/security-review or your own) if auth,
+              secrets or the public surface moved; read `complete` and `counts`; every
+              over-cap or unverified candidate gets a written disposition before merge
+[ ] Gate      CI green + correctness gate green (the gate map names it)
+[ ] PR        full template (pr-body.md), "Lane: H", the review record (label, agents sent,
+              model, where the text lives) and the verdicts
 [ ] Write set first write to live data that serves answers? Read the full planned write set
               first (before-building.md)
 [ ] Merge     under a base: the base merges after its verdict on the panel's record (complete,

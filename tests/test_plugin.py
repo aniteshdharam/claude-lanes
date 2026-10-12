@@ -91,6 +91,36 @@ class SkillTests(unittest.TestCase):
             self.assertTrue(fields.get("description"), name)
 
 
+class EvalTests(unittest.TestCase):
+    """Every eval case has the shape `claude plugin eval` reads; nothing else checks it."""
+
+    def cases(self):
+        root = os.path.join(ROOT, "evals")
+        return sorted(d for d in os.listdir(root) if os.path.isdir(os.path.join(root, d, "graders")))
+
+    def test_every_case_has_a_prompt_and_a_scored_grader(self):
+        names = self.cases()
+        self.assertGreaterEqual(len(names), 4)
+        for name in names:
+            prompt = frontmatter(read("evals", name, "prompt.md"))
+            self.assertIsNotNone(prompt, name)
+            self.assertTrue(prompt["max_turns"].isdigit(), name)
+            self.assertIn("Skill", prompt["allowed_tools"], f"{name}: the skill cannot fire without the Skill tool")
+            graders = os.listdir(os.path.join(ROOT, "evals", name, "graders"))
+            types = {}
+            for g in graders:
+                fields = frontmatter(read("evals", name, "graders", g))
+                self.assertIsNotNone(fields, f"{name}/{g}")
+                types[g] = fields["type"]
+            self.assertIn("llm", types.values(), f"{name}: no rubric grader")
+            self.assertIn("tool_used", types.values(), f"{name}: no skill-fired grader")
+
+    def test_the_readme_names_every_case(self):
+        readme = read("README.md")
+        for name in self.cases():
+            self.assertIn(name, readme, f"{name} is not in the README's scenario list")
+
+
 class PublicTextTests(unittest.TestCase):
     """Nothing machine-specific or tracker-specific leaks into the published files."""
 
@@ -145,13 +175,18 @@ class PanelTests(unittest.TestCase):
         return {"head_seen": head, "verdict": verdict, "quote": quote,
                 "reproduction": reproduction, "severity": "high", "reason": "because"}
 
+    @staticmethod
+    def check(printed, head=HEAD, error=""):
+        """What the checker reports after re-reading the quoted line at head."""
+        return {"head_seen": head, "printed": printed, "error": error}
+
     def args(self, **extra):
         return dict({"tree": "/tmp/tree", "head": HEAD, "base": BASE}, **extra)
 
     def test_node_parses_the_script(self):
         out = self.run_panel(self.args(), {})
         self.assertTrue(out["meta"]["name"])
-        self.assertEqual([p["title"] for p in out["meta"]["phases"]], ["Find", "Verify"])
+        self.assertEqual([p["title"] for p in out["meta"]["phases"]], ["Find", "Verify", "Check"])
 
     def test_phase_calls_match_meta(self):
         out = self.run_panel(self.args(), {
@@ -190,18 +225,25 @@ class PanelTests(unittest.TestCase):
             # confirmation with no command behind it: does not count
             "verifier:tests/test_db.py:7": self.verdict("confirmed", reproduction="none"),
             "verifier:src/api.py:22": self.verdict("confirmed", reproduction="pytest -k api: 1 failed"),
+            # the quoted line, re-read at head by a checker that runs one command
+            "checker:app.py:10": self.check("    if x is None: return 0"),
         })
         self.assertTrue(out["ok"], out.get("error"))
         r = out["result"]
         by = {f"{f['file']}:{f['line']}": f for f in r["findings"]}
         self.assertEqual(len(by["app.py:10"]["reports"]), 2, "two reports on one line pool into one candidate")
         self.assertEqual(by["app.py:10"]["verdict"], "dismissed")
+        self.assertEqual(by["app.py:10"]["quoted"], {"path": "app.py", "line": 12, "text": "if x is None: return 0"})
         self.assertEqual(by["src/db.py:3"]["verdict"], "stands")
         self.assertEqual(by["tests/test_db.py:7"]["verdict"], "stands")
         self.assertEqual(by["src/api.py:22"]["verdict"], "confirmed")
         self.assertTrue(r["complete"])
-        self.assertEqual(r["counts"]["agents_sent"], 3 + 4)
+        self.assertEqual(r["counts"]["agents_sent"], 3 + 4 + 1)
+        self.assertEqual(r["counts"]["checkers_sent"], 1)
         self.assertEqual(r["model"], "opus")
+        self.assertIn("opus", r["label"], "the record names the model that ran the panel")
+        checker_prompt = next(c["prompt"] for c in out["calls"] if c["label"] == "checker:app.py:10")
+        self.assertIn(f"git -C '/tmp/tree' show {HEAD}:'app.py' | sed -n '12p'", checker_prompt)
         self.assertTrue(all(c["model"] == "opus" for c in out["calls"]))
         verifier_prompt = next(c["prompt"] for c in out["calls"] if c["label"] == "verifier:app.py:10")
         self.assertIn("2 reports name this line", verifier_prompt)
@@ -210,13 +252,15 @@ class PanelTests(unittest.TestCase):
     def test_only_a_file_and_line_with_its_text_counts_as_a_quote(self):
         quotes = {
             "checked at 10:30 and it is fine": "stands",
-            "step:2 rejects it": "stands",
             "see line 12: it returns early": "stands",
             "Unconvinced: src/db.py:3 has no test for it, so unlikely": "stands",
             "the CI BUILD:3 passes so fine": "stands",
             "`src/db.py:3 if x is None: return`": "dismissed",
             "Makefile:4 test: lint": "dismissed",
-            "/scratch/lhr-tree.verifier-1/src/db.py:42 if not rows: return []": "dismissed",
+            # an absolute path, or one that climbs out of the checkout, is a verifier's own
+            # copy of the tree, not the reviewed commit: it never counts
+            "/scratch/lhr-tree.verifier-1/src/db.py:42 if not rows: return []": "stands",
+            "../lhr-tree.verifier-2/src/db.py:42 if not rows: return []": "stands",
             ".gitlab-ci.yml:5 only: [main]": "dismissed",
             "bin/deploy:12 set -euo pipefail": "dismissed",
         }
@@ -225,10 +269,161 @@ class PanelTests(unittest.TestCase):
                      "finder:harm": self.finder(findings[8:])}
         for i, quote in enumerate(quotes):
             responses[f"verifier:f{i}.py:{i + 1}"] = self.verdict("dismissed", quote=quote)
+            # every quoted line is there at head, so the checker cannot be the reason
+            responses[f"checker:f{i}.py:{i + 1}"] = self.check(quote.split(" ", 1)[1].strip("`"))
         out = self.run_panel(self.args(max_candidates=10), responses)
         self.assertTrue(out["ok"], out.get("error"))
         got = {f["quote"]: f["verdict"] for f in out["result"]["findings"]}
         self.assertEqual(got, quotes)
+        sent = {c["label"] for c in out["calls"] if c["label"].startswith("checker:")}
+        self.assertEqual(len(sent), 4, "only a quote that parses is sent to a checker")
+
+    def test_a_quote_not_at_head_turns_the_dismissal_into_stands(self):
+        base = {"finder:guards": self.finder([self.finding("a.py", 1), self.finding("b.py", 2), self.finding("c.py", 3),
+                                             self.finding("d.py", 4)]),
+                "finder:tests": self.finder([]), "finder:harm": self.finder([]),
+                "verifier:a.py:1": self.verdict("dismissed", quote="a.py:5 if not rows: return []"),
+                "verifier:b.py:2": self.verdict("dismissed", quote="b.py:9 raise ValueError(x)"),
+                "verifier:c.py:3": self.verdict("dismissed", quote="c.py:4   return total"),
+                "verifier:d.py:4": self.verdict("dismissed", quote="d.py:8 if not rows and not cache.get(key): return []"),
+                # the line at head is something else: the verifier quoted its own edit
+                "checker:a.py:1": self.check("    if rows: return rows"),
+                # the file or line is not there at head
+                "checker:b.py:2": self.check("", error="fatal: path 'b.py' does not exist"),
+                # the same line, with different whitespace: that is a match
+                "checker:c.py:3": self.check("        return total"),
+                # a short line that is only a piece of a long quote is not that line
+                "checker:d.py:4": self.check("return []"),
+                }
+        out = self.run_panel(self.args(), base)
+        self.assertTrue(out["ok"], out.get("error"))
+        by = {f["file"]: f for f in out["result"]["findings"]}
+        self.assertEqual(by["a.py"]["verdict"], "stands")
+        self.assertIn("not at a.py:5 in the reviewed commit", by["a.py"]["reason"])
+        self.assertEqual(by["b.py"]["verdict"], "stands")
+        self.assertIn("does not exist", by["b.py"]["reason"])
+        self.assertEqual(by["c.py"]["verdict"], "dismissed")
+        self.assertEqual(by["c.py"]["line_at_head"], "        return total")
+        self.assertEqual(by["d.py"]["verdict"], "stands")
+        self.assertTrue(out["result"]["complete"], "a checked run is complete even when checks fail")
+        self.assertEqual(out["result"]["counts"]["stands"], 3)
+        for c in out["calls"]:
+            if c["label"].startswith("checker:"):
+                self.assertNotIn("worktree add", c["prompt"], "a checker makes no worktree")
+                self.assertNotIn("if not rows", c["prompt"], "a checker is not told what the verifier quoted")
+
+    def test_a_fragment_of_the_line_is_not_a_quote_of_it(self):
+        cases = {
+            # (quote text, line at head): verdict
+            ("return", "    return unsafe_value"): "stands",
+            (")", "foo(bar)"): "stands",
+            # words after the line: the verifier was told to put nothing there; stands is the safe side
+            ("if not rows: return []  -- this guards the empty case", "if not rows: return []"): "stands",
+            ("'if not rows: return []'", "    if not rows: return []"): "dismissed",
+            ("if not rows: return [] and more and more and more and more", "if not rows"): "stands",
+        }
+        findings, responses = [], {"finder:tests": self.finder([]), "finder:harm": self.finder([])}
+        for i, ((text, at_head), _) in enumerate(cases.items()):
+            findings.append(self.finding(f"q{i}.py", i + 1))
+            responses[f"verifier:q{i}.py:{i + 1}"] = self.verdict("dismissed", quote=f"src/x.py:9 {text}")
+            responses[f"checker:q{i}.py:{i + 1}"] = self.check(at_head)
+        responses["finder:guards"] = self.finder(findings[:4])
+        responses["finder:tests"] = self.finder(findings[4:])
+        out = self.run_panel(self.args(max_candidates=10), responses)
+        self.assertTrue(out["ok"], out.get("error"))
+        got = [f["verdict"] for f in sorted(out["result"]["findings"], key=lambda f: f["file"])]
+        self.assertEqual(got, list(cases.values()))
+
+    def test_a_number_after_a_bare_word_is_not_a_quote(self):
+        out = self.run_panel(self.args(), {
+            "finder:guards": self.finder([self.finding("a.py", 1)]), "finder:tests": self.finder([]), "finder:harm": self.finder([]),
+            "verifier:a.py:1": self.verdict("dismissed", quote="step:2 rejects it"),
+        })
+        self.assertEqual(out["result"]["findings"][0]["verdict"], "stands")
+        self.assertEqual(out["result"]["counts"]["checkers_sent"], 0)
+
+    def test_a_dismissal_whose_checker_returns_nothing_is_unverified(self):
+        out = self.run_panel(self.args(), {
+            "finder:guards": self.finder([self.finding("a.py", 1), self.finding("b.py", 2)]),
+            "finder:tests": self.finder([]), "finder:harm": self.finder([]),
+            "verifier:a.py:1": self.verdict("dismissed", quote="a.py:5 if not rows: return []"),
+            "verifier:b.py:2": self.verdict("dismissed", quote="b.py:9 raise ValueError(x)"),
+            "checker:b.py:2": self.check("raise ValueError(x)", head="c" * 40),
+        })
+        by = {f["file"]: f for f in out["result"]["findings"]}
+        self.assertEqual(by["a.py"]["verdict"], "unverified")
+        self.assertEqual(by["b.py"]["verdict"], "unverified", "a checker on the wrong commit proves nothing")
+        self.assertFalse(out["result"]["complete"])
+        self.assertEqual(out["result"]["counts"]["checkers_returned"], 1)
+
+    def test_a_verifier_returning_nothing_is_unverified(self):
+        out = self.run_panel(self.args(), {
+            "finder:guards": self.finder([self.finding("a.py", 1)]),
+            "finder:tests": self.finder([]), "finder:harm": self.finder([]),
+        })
+        f = out["result"]["findings"][0]
+        self.assertEqual(f["verdict"], "unverified")
+        self.assertFalse(out["result"]["complete"])
+        self.assertEqual(out["result"]["counts"]["verifiers_returned"], 0)
+
+    def test_an_empty_reproduction_counts_as_standing(self):
+        out = self.run_panel(self.args(), {
+            "finder:guards": self.finder([self.finding("a.py", 1)]),
+            "finder:tests": self.finder([]), "finder:harm": self.finder([]),
+            "verifier:a.py:1": self.verdict("confirmed", reproduction="   "),
+        })
+        self.assertEqual(out["result"]["findings"][0]["verdict"], "stands")
+
+    def test_findings_past_the_fourth_are_pooled_not_dropped(self):
+        six = [self.finding(f"g{i}.py", i, "low") for i in range(6)]
+        out = self.run_panel(self.args(max_candidates=10), {
+            "finder:guards": self.finder(six), "finder:tests": self.finder([]), "finder:harm": self.finder([]),
+        })
+        self.assertTrue(out["ok"], out.get("error"))
+        r = out["result"]
+        self.assertEqual(r["counts"]["candidates"], 4, "the first four compete for verifiers")
+        self.assertEqual([f["file"] for f in r["over_cap"]], ["g4.py", "g5.py"], "the rest are returned unverified, not lost")
+        self.assertTrue(all(f["past_finder_limit"] for f in r["over_cap"]))
+        self.assertFalse(r["complete"])
+        self.assertTrue(any("more than 4 findings" in m for m in out["logs"]))
+
+    def test_an_over_limit_finder_cannot_crowd_the_other_angles_out(self):
+        out = self.run_panel(self.args(), {
+            "finder:guards": self.finder([self.finding(f"g{i}.py", i) for i in range(10)]),
+            "finder:tests": self.finder([self.finding("t.py", 1, "medium")]),
+            "finder:harm": self.finder([self.finding("h.py", 1, "medium")]),
+        })
+        verified = [f["file"] for f in out["result"]["findings"]]
+        self.assertIn("t.py", verified)
+        self.assertIn("h.py", verified)
+        self.assertEqual(len(verified), 6)
+
+    def test_ties_go_round_robin_across_finders(self):
+        out = self.run_panel(self.args(max_candidates=3), {
+            "finder:guards": self.finder([self.finding(f"g{i}.py", i) for i in range(4)]),
+            "finder:tests": self.finder([self.finding(f"t{i}.py", i) for i in range(4)]),
+            "finder:harm": self.finder([self.finding(f"h{i}.py", i) for i in range(4)]),
+        })
+        r = out["result"]
+        self.assertEqual([f["file"] for f in r["findings"]], ["g0.py", "t0.py", "h0.py"],
+                         "every finder's first finding is verified before any finder's second")
+        self.assertEqual(len(r["over_cap"]), 9)
+
+    def test_a_checkout_path_with_spaces_is_quoted(self):
+        out = self.run_panel({"tree": "/tmp/my tree", "head": HEAD, "base": BASE}, {
+            "finder:guards": self.finder([]), "finder:tests": self.finder([]), "finder:harm": self.finder([]),
+        })
+        self.assertTrue(out["ok"], out.get("error"))
+        prompt = out["calls"][0]["prompt"]
+        self.assertIn("git -C '/tmp/my tree' diff", prompt)
+        self.assertIn("worktree add --detach '/tmp/my tree.finder-guards' HEAD", prompt)
+
+    def test_a_fast_tier_model_is_warned_about(self):
+        out = self.run_panel(self.args(model="sonnet"), {
+            "finder:guards": self.finder([]), "finder:tests": self.finder([]), "finder:harm": self.finder([]),
+        })
+        self.assertTrue(any("fast tier" in m for m in out["logs"]))
+        self.assertIn("sonnet", out["result"]["label"])
 
     def test_arguments_typed_after_the_command(self):
         empty = {"finder:guards": self.finder([]), "finder:tests": self.finder([]), "finder:harm": self.finder([])}
