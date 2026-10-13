@@ -174,7 +174,8 @@ that returned nothing marks the run incomplete. CI runs them on every push, plus
 
 This plugin is a distillation, written for strangers, of a longer internal process document that
 keeps changing. We re-read the plugin against it every 30 days, or sooner when the document's
-lanes section changes, and record what moved in the [CHANGELOG](CHANGELOG.md). Between re-reads
+lanes section changes, and record what moved in the [CHANGELOG](CHANGELOG.md) and in each version's
+[release note](https://github.com/aniteshdharam/claude-lanes/releases). Between re-reads
 the two can differ; the plugin does not promise to stay in sync.
 
 ## License
