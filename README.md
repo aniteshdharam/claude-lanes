@@ -1,5 +1,9 @@
 # claude-lanes
 
+[![tests](https://github.com/aniteshdharam/claude-lanes/actions/workflows/test.yml/badge.svg)](https://github.com/aniteshdharam/claude-lanes/actions/workflows/test.yml)
+[![license: MIT](https://img.shields.io/github/license/aniteshdharam/claude-lanes)](LICENSE)
+[![release](https://img.shields.io/github/v/release/aniteshdharam/claude-lanes)](https://github.com/aniteshdharam/claude-lanes/releases)
+
 **A ten-line migration needs more review than a 400-line docs rewrite. Size design and review
 to the risk of a change, not to its line count.**
 
@@ -14,6 +18,16 @@ tracking issue, not in a chat that is gone tomorrow. Graded against a rubric we 
 
 For anyone shipping production code through Claude Code agents, especially if you are the one
 who answers for it when it breaks.
+
+```
+/plugin marketplace add aniteshdharam/claude-lanes
+/plugin install lanes@claude-lanes
+```
+
+Then add your own high-risk paths to your project's `CLAUDE.md`; [Install](#install) shows how.
+On high-risk work, the review is this panel, run by fresh agents:
+
+![The high-risk review panel: three finders, then one verifier per finding who confirms with a command or dismisses only by quoting the line that makes it impossible, then one checker per dismissal who re-reads that line at the head commit, then a report with counts and a complete flag](assets/review-panel.svg)
 
 ## The three lanes
 
