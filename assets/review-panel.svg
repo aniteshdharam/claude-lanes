@@ -1,70 +1,71 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 350" width="1000" height="350" role="img" aria-labelledby="t d" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 360" width="1000" height="360" role="img" aria-labelledby="t d" font-family="'IBM Plex Sans', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
   <title id="t">The high-risk review panel</title>
   <desc id="d">Three finders, each with one named angle, report findings. One verifier per finding, at most six, confirms it with a command or dismisses it only by quoting the line that makes it impossible. One checker per dismissal re-reads the quoted line at the head commit; if it is not found, the finding stands. The report gives counts and a complete flag.</desc>
   <defs>
     <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-      <path d="M0 0 L10 5 L0 10 z" fill="#57606a"/>
+      <path d="M0 0 L10 5 L0 10 z" fill="#4C6B63"/>
     </marker>
   </defs>
-  <rect x="1" y="1" width="998" height="348" rx="14" fill="#fbfaf6" stroke="#d8d4c8" stroke-width="2"/>
+  <rect x="1" y="1" width="998" height="358" rx="20" fill="#F7FBFB" stroke="#C6E0E6" stroke-width="2"/>
 
-  <g font-size="13" font-weight="700" letter-spacing="1.6" fill="#57606a">
-    <text x="30" y="46">FIND</text>
-    <text x="310" y="46">VERIFY</text>
-    <text x="590" y="46">CHECK</text>
-    <text x="870" y="46">REPORT</text>
+  <g font-family="'IBM Plex Mono', ui-monospace, Menlo, monospace" font-size="12" letter-spacing="2" fill="#4C6B63">
+    <text x="30" y="46">01 FIND</text>
+    <text x="310" y="46">02 VERIFY</text>
+    <text x="590" y="46">03 CHECK</text>
+    <text x="864" y="46">04 REPORT</text>
   </g>
 
-  <g fill="#ffffff" stroke="#8c959f" stroke-width="1.6">
-    <rect x="30" y="64" width="230" height="64" rx="10"/>
-    <rect x="30" y="142" width="230" height="64" rx="10"/>
-    <rect x="30" y="220" width="230" height="64" rx="10"/>
+  <g fill="#FFFFFF" stroke="#C6E0E6" stroke-width="1.5">
+    <rect x="30" y="64" width="230" height="64" rx="11"/>
+    <rect x="30" y="142" width="230" height="64" rx="11"/>
+    <rect x="30" y="220" width="230" height="64" rx="11"/>
   </g>
-  <g font-size="15" fill="#1f2328">
-    <text x="46" y="91" font-weight="700">Finder 1</text>
-    <text x="46" y="111" fill="#57606a">guards and their consumers</text>
-    <text x="46" y="169" font-weight="700">Finder 2</text>
-    <text x="46" y="189" fill="#57606a">tests that cannot fail</text>
-    <text x="46" y="247" font-weight="700">Finder 3</text>
-    <text x="46" y="267" fill="#57606a">what leaves the building</text>
+  <g font-size="14.5" fill="#2A4640">
+    <text x="46" y="91" font-family="'Source Serif 4', Georgia, serif" font-size="15" font-weight="600" fill="#0D211D">Finder 1</text>
+    <text x="46" y="112">guards and their consumers</text>
+    <text x="46" y="169" font-family="'Source Serif 4', Georgia, serif" font-size="15" font-weight="600" fill="#0D211D">Finder 2</text>
+    <text x="46" y="190">tests that cannot fail</text>
+    <text x="46" y="247" font-family="'Source Serif 4', Georgia, serif" font-size="15" font-weight="600" fill="#0D211D">Finder 3</text>
+    <text x="46" y="268">what leaves the building</text>
   </g>
 
-  <g stroke="#57606a" stroke-width="1.6" fill="none">
+  <g stroke="#4C6B63" stroke-width="1.5" fill="none">
     <path d="M260 96 H280 V252 H260"/>
     <path d="M280 174 H306" marker-end="url(#arr)"/>
   </g>
 
-  <rect x="310" y="82" width="230" height="184" rx="10" fill="#fdf3e1" stroke="#d4881f" stroke-width="1.8"/>
-  <g font-size="15" fill="#1f2328">
-    <text x="326" y="112" font-weight="700">One verifier per finding</text>
-    <text x="326" y="134" fill="#57606a">at most six</text>
+  <rect x="310" y="82" width="230" height="184" rx="11" fill="#E3EEF0" stroke="#0F5F6F" stroke-width="1.5"/>
+  <g font-size="14.5" fill="#2A4640">
+    <text x="326" y="112" font-family="'Source Serif 4', Georgia, serif" font-size="15" font-weight="600" fill="#0D211D">One verifier per finding</text>
+    <text x="326" y="134" font-family="'IBM Plex Mono', ui-monospace, Menlo, monospace" font-size="12" letter-spacing="1" fill="#0F5F6F">AT MOST SIX</text>
     <text x="326" y="166">Confirms it with a command,</text>
     <text x="326" y="188">or dismisses it only by</text>
     <text x="326" y="210">quoting the line that makes</text>
     <text x="326" y="232">it impossible.</text>
   </g>
 
-  <path d="M540 174 H586" stroke="#57606a" stroke-width="1.6" fill="none" marker-end="url(#arr)"/>
+  <path d="M540 174 H586" stroke="#4C6B63" stroke-width="1.5" fill="none" marker-end="url(#arr)"/>
 
-  <rect x="590" y="82" width="230" height="184" rx="10" fill="#fdf3e1" stroke="#d4881f" stroke-width="1.8"/>
-  <g font-size="15" fill="#1f2328">
-    <text x="606" y="112" font-weight="700">One checker per dismissal</text>
-    <text x="606" y="134" fill="#57606a">a fresh agent</text>
+  <rect x="590" y="82" width="230" height="184" rx="11" fill="#E3EEF0" stroke="#0F5F6F" stroke-width="1.5"/>
+  <g font-size="14.5" fill="#2A4640">
+    <text x="606" y="112" font-family="'Source Serif 4', Georgia, serif" font-size="15" font-weight="600" fill="#0D211D">One checker per dismissal</text>
+    <text x="606" y="134" font-family="'IBM Plex Mono', ui-monospace, Menlo, monospace" font-size="12" letter-spacing="1" fill="#0F5F6F">A FRESH AGENT</text>
     <text x="606" y="166">Re-reads the quoted line at</text>
     <text x="606" y="188">the head commit.</text>
     <text x="606" y="220">Line not found: the</text>
     <text x="606" y="242">finding stands.</text>
   </g>
 
-  <path d="M820 174 H866" stroke="#57606a" stroke-width="1.6" fill="none" marker-end="url(#arr)"/>
+  <path d="M820 174 H860" stroke="#4C6B63" stroke-width="1.5" fill="none" marker-end="url(#arr)"/>
 
-  <rect x="870" y="116" width="100" height="116" rx="10" fill="#1f2328"/>
-  <g font-size="15" fill="#fbfaf6">
-    <text x="886" y="148" font-weight="700">Report</text>
-    <text x="886" y="176">counts and</text>
-    <text x="886" y="198">a complete</text>
-    <text x="886" y="220">flag</text>
+  <rect x="864" y="112" width="110" height="124" rx="11" fill="#0F5F6F"/>
+  <g font-size="14.5" fill="#FFFFFF">
+    <text x="880" y="144" font-family="'Source Serif 4', Georgia, serif" font-size="15" font-weight="600">Report</text>
+    <text x="880" y="172">counts and</text>
+    <text x="880" y="194">a complete</text>
+    <text x="880" y="216">flag</text>
   </g>
 
-  <text x="30" y="324" font-size="14" fill="#57606a">A finder, verifier or checker that returns nothing marks the run incomplete, so an empty result from a half-run review cannot pass as clean.</text>
+  <line x1="30" y1="306" x2="970" y2="306" stroke="#C6E0E6" stroke-width="1"/>
+  <text x="30" y="334" font-size="14" fill="#2A4640">A finder, verifier or checker that returns nothing marks the run incomplete, so an empty result from a half-run review cannot pass as clean.</text>
 </svg>
